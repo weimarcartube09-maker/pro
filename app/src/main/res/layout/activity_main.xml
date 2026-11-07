@@ -10,6 +10,14 @@
         android:orientation="horizontal">
         <Button android:id="@+id/btnConnect" android:layout_width="0dp"
             android:layout_weight="1" android:layout_height="wrap_content" android:text="Conectar" />
+        <Button android:id="@+id/btnStation" android:layout_width="0dp"
+            android:layout_weight="1" android:layout_height="wrap_content" android:text="Estación" />
+        <Button android:id="@+id/btnTools" android:layout_width="0dp"
+            android:layout_weight="1" android:layout_height="wrap_content" android:text="Programas" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal">
         <Button android:id="@+id/btnSave" android:layout_width="0dp"
             android:layout_weight="1" android:layout_height="wrap_content" android:text="Guardar CSV" />
         <Button android:id="@+id/btnClear" android:layout_width="0dp"

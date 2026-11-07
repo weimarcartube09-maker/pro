@@ -2,6 +2,9 @@ package com.example.topobt;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Intent;
+import android.text.InputType;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -18,6 +21,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends Activity {
 
@@ -30,7 +35,7 @@ public class MainActivity extends Activity {
     private volatile boolean connected = false;
 
     private final List<BluetoothDevice> devices = new ArrayList<>();
-    private final StringBuilder csv = new StringBuilder("hora,dato\n");
+    private final StringBuilder csv = new StringBuilder("hora,dato,punto,E,N,Z\n");
     private final SimpleDateFormat hora = new SimpleDateFormat("HH:mm:ss", Locale.US);
 
     private Spinner spDevices;
@@ -58,11 +63,14 @@ public class MainActivity extends Activity {
 
         btnConnect.setOnClickListener(v -> { if (connected) disconnect(); else connect(); });
         findViewById(R.id.btnSend).setOnClickListener(v -> send());
+        findViewById(R.id.btnStation).setOnClickListener(v -> stationDialog());
+        findViewById(R.id.btnTools).setOnClickListener(v ->
+                startActivity(new Intent(this, ToolsActivity.class)));
         findViewById(R.id.btnSave).setOnClickListener(v -> saveCsv());
         findViewById(R.id.btnClear).setOnClickListener(v -> {
             tvLog.setText("");
             csv.setLength(0);
-            csv.append("hora,dato\n");
+            csv.append("hora,dato,punto,E,N,Z\n");
         });
 
         if (hasPermission()) loadDevices(); else requestPerm();
@@ -114,7 +122,6 @@ public class MainActivity extends Activity {
 
         new Thread(() -> {
             try {
-                adapter.cancelDiscovery();
                 socket = dev.createRfcommSocketToServiceRecord(SPP);
                 socket.connect();
                 out = socket.getOutputStream();
@@ -125,7 +132,7 @@ public class MainActivity extends Activity {
                     btnConnect.setEnabled(true);
                 });
                 readLoop(socket.getInputStream());
-            } catch (IOException e) {
+            } catch (Exception e) {
                 runOnUiThread(() -> {
                     tvStatus.setText("Error: " + e.getMessage());
                     btnConnect.setEnabled(true);
@@ -156,14 +163,75 @@ public class MainActivity extends Activity {
         } catch (IOException ignored) { }
     }
 
-    // Aquí se procesa cada línea recibida. Es el sitio para tu parser de la estación.
+    private static final Pattern NUM = Pattern.compile("-?\\d+(?:[.,]\\d+)?");
+
+    // Cada línea de la estación llega aquí. Se toman los 3 primeros números como
+    // Hz, ángulo cenital V y distancia inclinada. Ajusta esto al formato de tu marca.
     private void onLine(String s) {
         final String t = hora.format(new Date());
-        csv.append(t).append(",\"").append(s.replace("\"", "\"\"")).append("\"\n");
+        String extra = "";
+        String nombre = "", cn = "", ce = "", cz = "";
+        Matcher m = NUM.matcher(s);
+        List<Double> nums = new ArrayList<>();
+        while (m.find()) nums.add(Double.parseDouble(m.group().replace(',', '.')));
+        if (nums.size() >= 3) {
+            double hz = TopoMath.ang(nums.get(0)), vz = TopoMath.ang(nums.get(1)), sd = nums.get(2);
+            double az = Math.toRadians(Store.az0 + hz);
+            double hd = sd * Math.sin(Math.toRadians(vz));
+            double dz = sd * Math.cos(Math.toRadians(vz)) + Store.hi - Store.ht;
+            double n = Store.n0 + hd * Math.cos(az), e = Store.e0 + hd * Math.sin(az), z = Store.z0 + dz;
+            nombre = Store.add(n, e, z);
+            cn = String.format(Locale.US, "%.3f", n);
+            ce = String.format(Locale.US, "%.3f", e);
+            cz = String.format(Locale.US, "%.3f", z);
+            extra = "\n   → " + nombre + "  E=" + ce + "  N=" + cn + "  Z=" + cz;
+        }
+        csv.append(t).append(",\"").append(s.replace("\"", "\"\"")).append("\",")
+           .append(nombre).append(",").append(ce).append(",").append(cn).append(",").append(cz).append("\n");
+        final String linea = t + "  " + s + extra + "\n";
         runOnUiThread(() -> {
-            tvLog.append(t + "  " + s + "\n");
+            tvLog.append(linea);
             scroll.post(() -> scroll.fullScroll(View.FOCUS_DOWN));
         });
+    }
+
+    private void stationDialog() {
+        ScrollView sv = new ScrollView(this);
+        LinearLayout l = new LinearLayout(this);
+        l.setOrientation(LinearLayout.VERTICAL);
+        l.setPadding(32, 16, 32, 0);
+        sv.addView(l);
+        String[] lab = {"Este de la estación", "Norte de la estación", "Cota de la estación",
+                "Azimut que corresponde a Hz = 0", "Altura del instrumento", "Altura del prisma"};
+        double[] val = {Store.e0, Store.n0, Store.z0, Store.az0, Store.hi, Store.ht};
+        final EditText[] ed = new EditText[6];
+        for (int i = 0; i < 6; i++) {
+            ed[i] = new EditText(this);
+            ed[i].setHint(lab[i]);
+            ed[i].setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL
+                    | InputType.TYPE_NUMBER_FLAG_SIGNED);
+            ed[i].setText(String.valueOf(val[i]));
+            l.addView(ed[i]);
+        }
+        final CheckBox cb = new CheckBox(this);
+        cb.setText("Ángulos en GG.MMSS");
+        cb.setChecked(TopoMath.gms);
+        l.addView(cb);
+        new AlertDialog.Builder(this).setTitle("Datos de la estación").setView(sv)
+            .setPositiveButton("Guardar", (d, w) -> {
+                try {
+                    Store.e0 = Double.parseDouble(ed[0].getText().toString());
+                    Store.n0 = Double.parseDouble(ed[1].getText().toString());
+                    Store.z0 = Double.parseDouble(ed[2].getText().toString());
+                    TopoMath.gms = cb.isChecked();
+                    Store.az0 = TopoMath.ang(Double.parseDouble(ed[3].getText().toString()));
+                    Store.hi = Double.parseDouble(ed[4].getText().toString());
+                    Store.ht = Double.parseDouble(ed[5].getText().toString());
+                } catch (NumberFormatException ex) {
+                    Toast.makeText(this, "Algún dato no es un número", Toast.LENGTH_SHORT).show();
+                }
+            })
+            .setNegativeButton("Cancelar", null).show();
     }
 
     private void send() {
