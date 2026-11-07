@@ -3,35 +3,45 @@
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical" android:padding="8dp">
 
-    <Spinner android:id="@+id/spDevices"
-        android:layout_width="match_parent" android:layout_height="wrap_content" />
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <Button android:id="@+id/btnConnect" android:layout_width="0dp"
-            android:layout_weight="1" android:layout_height="wrap_content" android:text="Conectar" />
-        <Button android:id="@+id/btnSave" android:layout_width="0dp"
-            android:layout_weight="1" android:layout_height="wrap_content" android:text="Guardar CSV" />
-        <Button android:id="@+id/btnClear" android:layout_width="0dp"
-            android:layout_weight="1" android:layout_height="wrap_content" android:text="Limpiar" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+        <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="TopoBT" android:textSize="24sp" android:textStyle="bold" android:padding="8dp" />
+        <Button android:id="@+id/btnFolder" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Archivos" />
     </LinearLayout>
 
-    <TextView android:id="@+id/tvStatus" android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:text="Desconectado" android:padding="4dp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+        <Spinner android:id="@+id/spDevices" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" />
+        <Button android:id="@+id/btnConnect" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Conectar" />
+    </LinearLayout>
+    <Spinner android:id="@+id/spProfile" android:layout_width="match_parent" android:layout_height="wrap_content" />
 
-    <ScrollView android:id="@+id/scroll" android:layout_width="match_parent"
-        android:layout_height="0dp" android:layout_weight="1">
-        <TextView android:id="@+id/tvLog" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:typeface="monospace"
-            android:textIsSelectable="true" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <Button android:id="@+id/btnStation" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Estación" />
+        <Button android:id="@+id/btnTools" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Programas" />
+        <Button android:id="@+id/btnTarget" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Prisma" />
+    </LinearLayout>
+
+    <ScrollView android:id="@+id/scroll" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+            <com.example.topobt.StationView android:id="@+id/stationView" android:layout_width="match_parent" android:layout_height="190dp" />
+            <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:fillViewport="false" android:scrollbars="horizontal">
+                <TextView android:id="@+id/tvLive" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="D: —   |   Azimut Hz: —   |   V: —&#10;E: —   |   N: —   |   Z: —" android:textSize="14sp" android:padding="10dp" />
+            </HorizontalScrollView>
+            <TextView android:id="@+id/tvStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Desconectado" android:padding="6dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Registro de comunicación" android:textStyle="bold" android:padding="6dp" />
+                <Button android:id="@+id/btnClear" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Limpiar" />
+            </LinearLayout>
+            <TextView android:id="@+id/tvLog" android:layout_width="match_parent" android:layout_height="wrap_content" android:typeface="monospace" android:textIsSelectable="true" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <EditText android:id="@+id/etSend" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:hint="Comando manual" android:singleLine="true" />
+                <Button android:id="@+id/btnSend" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Enviar" />
+            </LinearLayout>
+        </LinearLayout>
     </ScrollView>
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <EditText android:id="@+id/etSend" android:layout_width="0dp"
-            android:layout_weight="1" android:layout_height="wrap_content"
-            android:hint="Comando" android:singleLine="true" />
-        <Button android:id="@+id/btnSend" android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:text="Enviar" />
+    <Button android:id="@+id/btnAuto" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Lectura automática: activada" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <Button android:id="@+id/btnMeasure" android:layout_width="0dp" android:layout_weight="1" android:layout_height="56dp" android:text="Medir" android:textSize="18sp" />
+        <Button android:id="@+id/btnMeasureSave" android:layout_width="0dp" android:layout_weight="1" android:layout_height="56dp" android:text="Medir y guardar" android:textSize="16sp" />
     </LinearLayout>
 </LinearLayout>
