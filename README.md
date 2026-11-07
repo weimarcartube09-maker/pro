@@ -11,6 +11,8 @@ Proyecto Android para trabajo topográfico con Bluetooth SPP.
 - Captura de lecturas desde los formularios de los programas.
 - En cada programa, acciones **CALCULAR** (datos manuales), **MEDIR** y **REGISTRO** (medir y guardar).
 - En Área, los registros medidos agregan vértices; al repetir el primer vértice o cerrar el polígono se muestran las áreas 2D y 3D.
+- Programa **Sección vial / placa** con coordenadas medida y eje, kilometraje, azimut, pendientes, ángulo incluido, espesor, desplazamientos, ensanchamiento, orientación y gráfica de replanteo.
+- En Sección vial, el punto se proyecta sobre el eje y su perpendicular definida por el azimut y el ángulo incluido; el alzado aplica pendiente longitudinal, pendiente de placa y espesor ingresados.
 - Selector de objetivo Prisma/Sin prisma y altura de prisma para los cálculos de coordenadas.
 - Cálculo de área de polígono, curvas circulares y espirales; entrada opcional de varios PI en filas.
 - Carpetas de trabajo y exportación de puntos a TXT mediante el selector de archivos de Android.

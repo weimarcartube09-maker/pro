@@ -6,6 +6,9 @@ import java.util.Locale;
 public class TopoMath {
 
     public static boolean gms = false; // true: los ángulos se escriben como GG.MMSS
+    public static boolean sectionReverse = false;
+    public static String sectionElement = "Recta";
+    public static String sectionPlateName = "Placa objetivo";
 
     public interface Run { String run(double[] v); }
 
@@ -37,6 +40,11 @@ public class TopoMath {
             TopoMath::espiral),
         new Prog("Área de polígono",
             new String[0], v -> "Ingrese tres o más puntos para calcular el área."),
+        new Prog("Sección vial / placa",
+            new String[]{"P:Punto medido", "P:Punto eje", "A:Azimut tangente", "N:Kilometraje del eje (m)",
+                "N:Alzado de diseño en el eje (m)", "N:Pendiente longitudinal (%)", "N:Desplazamiento de diseño (m)",
+                "N:Espesor de capa (m)", "N:Desplazamiento placa lateral (m)", "A:Ángulo incluido",
+                "N:Pendiente de placa (%)", "N:Ensanchamiento de placa (m)"}, TopoMath::seccionVial),
     };
 
     // ---------- utilidades ----------
@@ -92,6 +100,26 @@ public class TopoMath {
         return hasZ?s+String.format(Locale.US,"Área de superficie (3D): %.3f m²\nPerímetro 3D: %.3f m\n",area3d,perimeter3d):s+"Área 3D: falta la cota Z en uno o más vértices.\n";
     }
     public static boolean samePoint(double[] a,double[] b){return a!=null&&b!=null&&a.length>=2&&b.length>=2&&Math.hypot(a[0]-b[0],a[1]-b[1])<=0.001;}
+    public static class SectionResult {
+        public double station,measuredOffset,measuredElevation,targetOffset,axisDesignElevation,designElevation,lowerElevation,verticalCorrection,lateralCorrection,sectionAzimuth,plateSlope;
+    }
+    public static SectionResult sectionResult(double[] v){
+        double az=rad(v[6]),dN=v[0]-v[3],dE=v[1]-v[4];
+        double along=dN*Math.cos(az)+dE*Math.sin(az);
+        double included=rad(v[13]);
+        double sectionAz=az+included;
+        double lateral=dN*Math.cos(sectionAz)+dE*Math.sin(sectionAz);
+        if(sectionReverse){along=-along;lateral=-lateral;}
+        SectionResult r=new SectionResult();r.station=v[7]+along;r.measuredOffset=lateral;r.measuredElevation=v[2];
+        r.targetOffset=v[10]+v[12]+v[15];r.sectionAzimuth=norm(Math.toDegrees(sectionAz)+(sectionReverse?180:0));
+        r.axisDesignElevation=v[8]+along*v[9]/100.0;r.plateSlope=v[14];
+        r.designElevation=r.axisDesignElevation+r.targetOffset*v[14]/100.0;
+        r.lowerElevation=r.designElevation-v[11];
+        r.verticalCorrection=r.lowerElevation-v[2];r.lateralCorrection=r.targetOffset-lateral;return r;
+    }
+    static String seccionVial(double[] v){SectionResult r=sectionResult(v);String vertical=Math.abs(r.verticalCorrection)<0.001?"A nivel":(r.verticalCorrection>0?"Subir ":"Bajar ")+f(Math.abs(r.verticalCorrection))+" m";
+        String lateral=Math.abs(r.lateralCorrection)<0.001?"En posición":(r.lateralCorrection>0?"Mover hacia afuera ":"Mover hacia adentro ")+f(Math.abs(r.lateralCorrection))+" m";
+        return String.format(Locale.US,"Sección vial · %s · %s\nKilometraje calculado: K%.0f+%07.3f\nDesplazamiento medido: %.3f m\nDesplazamiento objetivo: %.3f m\nAlzado de diseño: %.3f m\nH inferior (con espesor): %.3f m\n%s\n%s\nÁngulo incluido: %.4f°\nAzimut tangente: %.4f°\nAzimut de sección: %.4f°\nPendiente longitudinal: %.3f %%\nPendiente de placa: %.3f %%\nEspesor de capa: %.3f m\nPlaca: %s · Ensanchamiento: %.3f m\nElemento: %s · Orientación: %s",sectionPlateName,sectionElement,Math.floor(r.station/1000.0),r.station-Math.floor(r.station/1000.0)*1000.0,r.measuredOffset,r.targetOffset,r.designElevation,r.lowerElevation,vertical,lateral,v[13],v[6],r.sectionAzimuth,v[9],v[14],v[11],sectionPlateName,v[15],sectionElement,sectionReverse?"Pequeño kilometraje":"Gran kilometraje");}
     static double[] mov(double N, double E, double az, double d) {
         return new double[]{N + d * Math.cos(rad(az)), E + d * Math.sin(rad(az))};
     }
